@@ -55,7 +55,6 @@ if ("IntersectionObserver" in window) {
       }
     },
     {
-      // On "vise" la zone milieu d'écran, stable même avec padding/sections longues
       root: null,
       threshold: [0.2, 0.35, 0.5, 0.65],
       rootMargin: "-35% 0px -55% 0px"
@@ -82,6 +81,27 @@ if ("IntersectionObserver" in window) {
 
   window.addEventListener("scroll", setActiveLinkFallback);
   window.addEventListener("load", setActiveLinkFallback);
+}
+
+/* =========================
+   REVEAL ON SCROLL
+   (évite que tout reste invisible avec .reveal { opacity:0 })
+========================= */
+const revealEls = document.querySelectorAll(".reveal");
+if (revealEls.length) {
+  const revealObserver = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("in");
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.15 }
+  );
+
+  revealEls.forEach(el => revealObserver.observe(el));
 }
 
 /* =========================
