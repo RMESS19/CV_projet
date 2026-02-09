@@ -7,7 +7,7 @@ const menu = document.getElementById("menu");
 if (burger && menu) {
   burger.addEventListener("click", () => {
     const expanded = burger.getAttribute("aria-expanded") === "true";
-    burger.setAttribute("aria-expanded", !expanded);
+    burger.setAttribute("aria-expanded", String(!expanded));
     menu.classList.toggle("open");
   });
 
@@ -21,42 +21,68 @@ if (burger && menu) {
 }
 
 /* =========================
-   SUR LIGNAGE MENU AU SCROLL
+   SUR LIGNAGE MENU AU SCROLL (FIABLE)
+   -> IntersectionObserver
 ========================= */
-const sections = document.querySelectorAll("section[id]");
 const navLinks = document.querySelectorAll(".nav-link");
+const sections = document.querySelectorAll("section[id]");
 
-function setActiveLink() {
-  let currentId = "";
-
-  sections.forEach(section => {
-    const sectionTop = section.offsetTop - 120; // offset header
-    const sectionHeight = section.offsetHeight;
-
-    if (
-      window.scrollY >= sectionTop &&
-      window.scrollY < sectionTop + sectionHeight
-    ) {
-      currentId = section.getAttribute("id");
-    }
-  });
-
+function setActive(id) {
   navLinks.forEach(link => {
-    const href = link.getAttribute("href");
-    link.classList.toggle("active", href === `#${currentId}`);
+    const href = link.getAttribute("href") || "";
+    link.classList.toggle("active", href === `#${id}`);
   });
-
-  // 🔧 CAS PARTICULIER : tout en bas de la page → Contact actif
-  if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 2) {
-    navLinks.forEach(link => link.classList.remove("active"));
-    document
-      .querySelector('.nav-link[href="#contact"]')
-      ?.classList.add("active");
-  }
 }
 
-window.addEventListener("scroll", setActiveLink);
-window.addEventListener("load", setActiveLink);
+// Valeur par défaut
+setActive("accueil");
+
+if ("IntersectionObserver" in window) {
+  const spyObserver = new IntersectionObserver(
+    entries => {
+      // On prend la section la plus visible parmi celles intersectées
+      const visible = entries
+        .filter(e => e.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+      if (visible?.target?.id) {
+        setActive(visible.target.id);
+      }
+
+      // Cas particulier : si on est tout en bas, on force Contact actif
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 2) {
+        setActive("contact");
+      }
+    },
+    {
+      // On "vise" la zone milieu d'écran, stable même avec padding/sections longues
+      root: null,
+      threshold: [0.2, 0.35, 0.5, 0.65],
+      rootMargin: "-35% 0px -55% 0px"
+    }
+  );
+
+  sections.forEach(section => spyObserver.observe(section));
+} else {
+  // Fallback si navigateur ancien
+  function setActiveLinkFallback() {
+    let currentId = "accueil";
+    const y = window.scrollY + 150;
+
+    sections.forEach(section => {
+      if (section.offsetTop <= y) currentId = section.id;
+    });
+
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 2) {
+      currentId = "contact";
+    }
+
+    setActive(currentId);
+  }
+
+  window.addEventListener("scroll", setActiveLinkFallback);
+  window.addEventListener("load", setActiveLinkFallback);
+}
 
 /* =========================
    BOUTON RETOUR EN HAUT
@@ -115,10 +141,10 @@ const counterObserver = new IntersectionObserver(
       const interval = setInterval(() => {
         current += step;
         if (current >= target) {
-          el.textContent = target;
+          el.textContent = String(target);
           clearInterval(interval);
         } else {
-          el.textContent = current;
+          el.textContent = String(current);
         }
       }, 20);
 
@@ -150,7 +176,7 @@ const projects = {
   3: {
     title: "Dashboard / suivi",
     content:
-      "<p>Suivi simple des indicateurs, qualité des données et reporting.</p>"
+      "<p>Suivi simple : indicateurs, qualité des données, export.</p>"
   }
 };
 
@@ -181,5 +207,5 @@ document.querySelectorAll("[data-close]").forEach(el => {
 ========================= */
 const year = document.getElementById("year");
 if (year) {
-  year.textContent = new Date().getFullYear();
+  year.textContent = String(new Date().getFullYear());
 }
