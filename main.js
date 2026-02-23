@@ -179,3 +179,4 @@ if (form) {
     if (hint) hint.textContent = "Message prêt (démo). Pour envoyer vraiment, il faut un backend (PHP / API).";
   });
 }
+
